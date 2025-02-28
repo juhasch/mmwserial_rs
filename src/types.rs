@@ -46,9 +46,7 @@ pub struct Header {
     pub num_tlv: u32,
 }
 
-#[pymethods]
 impl Header {
-    #[new]
     pub fn new() -> Self {
         Header {
             magic: MAGIC_WORD.to_vec(),
@@ -63,6 +61,15 @@ impl Header {
     }
 }
 
+#[pymethods]
+impl Header {
+    #[new]
+    #[pyo3(signature = ())]
+    fn new_py() -> Self {
+        Self::new()
+    }
+}
+
 /// TLV (Type-Length-Value) header structure
 #[pyclass(frozen)]
 #[derive(Debug, Clone)]
@@ -73,14 +80,21 @@ pub struct TlvHeader {
     pub length: u32,
 }
 
-#[pymethods]
 impl TlvHeader {
-    #[new]
     pub fn new() -> Self {
         TlvHeader {
             typ: 0,
             length: 0,
         }
+    }
+}
+
+#[pymethods]
+impl TlvHeader {
+    #[new]
+    #[pyo3(signature = ())]
+    fn new_py() -> Self {
+        Self::new()
     }
 }
 
@@ -94,10 +108,17 @@ pub struct RadarPacket {
     pub data: Vec<u8>,
 }
 
+impl RadarPacket {
+    pub fn new(header: Header, data: Vec<u8>) -> Self {
+        RadarPacket { header, data }
+    }
+}
+
 #[pymethods]
 impl RadarPacket {
     #[new]
-    pub fn new(header: Header, data: Vec<u8>) -> Self {
-        RadarPacket { header, data }
+    #[pyo3(signature = (header, data))]
+    fn new_py(header: Header, data: Vec<u8>) -> Self {
+        Self::new(header, data)
     }
 } 

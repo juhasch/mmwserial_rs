@@ -4,6 +4,7 @@ use std::time::{Duration, Instant};
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::Cursor;
 use std::collections::VecDeque;
+use std::rc::Rc;
 
 use crate::types::{Header, RadarPacket, MAGIC_WORD};
 
@@ -129,7 +130,8 @@ fn read_exact_from_buffer(
     Ok(true)
 }
 
-#[pyclass]
+/// RadarReader structure for handling serial communication with the radar
+#[pyclass(unsendable)]
 pub struct RadarReader {
     port: Box<dyn SerialPort>,
     buffer: Vec<u8>,
@@ -137,6 +139,7 @@ pub struct RadarReader {
     header_buffer: Vec<u8>,
     debug: bool,
     last_frame_time: Option<Instant>,
+    _unsendable: Rc<()>,
 }
 
 #[pymethods]
@@ -157,6 +160,7 @@ impl RadarReader {
             header_buffer: vec![0u8; 32],         // Fixed header buffer
             debug: debug.unwrap_or(false),
             last_frame_time: None,
+            _unsendable: Rc::new(()),
         })
     }
 

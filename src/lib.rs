@@ -5,8 +5,8 @@ mod reader;
 
 /// A Python module implemented in Rust.
 #[pymodule]
-fn mmwserial(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_class::<reader::RadarReader>()?;
+fn mmwserial(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add("RadarReader", _py.get_type::<reader::RadarReader>())?;
     Ok(())
 }
 
