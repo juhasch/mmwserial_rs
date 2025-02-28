@@ -27,7 +27,7 @@ def main():
         
         # Read packets for a few seconds
         start_time = time.time()
-        while time.time() - start_time < 10:  # Run for 10 seconds
+        while time.time() - start_time < 100:  # Run for 10 seconds
             if packet := reader.read_packet():
                 total_frames += 1
                 frame = packet.header.frame_number

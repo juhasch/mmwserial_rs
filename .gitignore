@@ -1,5 +1,4 @@
 # Byte-compiled / optimized / DLL files
-target/
 info/
 __pycache__/
 *.py[cod]
@@ -57,3 +56,7 @@ docs/_build/
 docs/_static/
 
 .idea
+
+# Rust
+target/
+
