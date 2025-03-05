@@ -93,12 +93,6 @@ fn read_exact_from_buffer(
         if completion_ratio >= min_completion_ratio && // Met size-based threshold
            stall_time.elapsed() > Duration::from_millis(8) && // Reduced stall time
            last_read_time.elapsed() > Duration::from_millis(5) { // Reduced wait time
-            if debug {
-                println!("Accepting stalled read at {}% ({}/{} bytes) after {:?} with no progress", 
-                        completion_ratio * 100.0,
-                        filled, buf.len(),
-                        stall_time.elapsed());
-            }
             // Zero-fill remaining bytes
             for i in filled..buf.len() {
                 buf[i] = 0;
@@ -227,10 +221,6 @@ impl RadarReader {
         
         // Calculate expected data length
         let expected_data_len = header.total_packet_len as usize - 40; // 40 = magic(8) + header(32)
-        if self.debug {
-            println!("Expecting {} bytes of data (total_packet_len={}, header=32, magic=8)", 
-                    expected_data_len, header.total_packet_len);
-        }
         
         // Adjust timeout based on packet size, but ensure we don't exceed global timeout
         let remaining_time = global_timeout.saturating_sub(start_time.elapsed());
@@ -247,11 +237,6 @@ impl RadarReader {
             return Ok(None);
         }
 
-        let elapsed = start_time.elapsed();
-        if self.debug {
-            println!("Frame {} processed in {:?}", header.frame_number, elapsed);
-        }
-        
         self.last_frame_time = Some(start_time);
         Ok(Some(RadarPacket { 
             header, 
