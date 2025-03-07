@@ -31,7 +31,6 @@ impl From<UDPError> for PyErr {
 pub struct UDPReader {
     socket: UdpSocket,
     frame_size: usize,
-    timeout: Duration,
 }
 
 #[pymethods]
@@ -67,7 +66,6 @@ impl UDPReader {
         Ok(Self {
             socket,
             frame_size,
-            timeout: Duration::from_millis(timeout_ms),
         })
     }
 

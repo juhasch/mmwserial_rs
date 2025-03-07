@@ -21,6 +21,9 @@ fn read_available(port: &mut Box<dyn SerialPort>, read_buffer: &mut VecDeque<u8>
     
     // Try to read multiple times with a short timeout
     while start.elapsed() < Duration::from_millis(10) {  // Reduced read window for faster frames
+        // Check for Python interrupt
+        Python::with_gil(|py| py.check_signals())?;
+        
         match port.read(&mut temp_buf) {
             Ok(n) if n > 0 => {
                 read_buffer.extend(&temp_buf[..n]);
@@ -32,12 +35,12 @@ fn read_available(port: &mut Box<dyn SerialPort>, read_buffer: &mut VecDeque<u8>
             }
             Ok(_) => {
                 if total_read > 0 {
-                    std::thread::sleep(Duration::from_micros(100));  // Shorter delay for faster frames
+                    std::thread::sleep(Duration::from_micros(50));  // Even shorter delay
                 }
             }
             Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {
                 if total_read > 0 {
-                    std::thread::sleep(Duration::from_micros(100));  // Shorter delay for faster frames
+                    std::thread::sleep(Duration::from_micros(50));  // Even shorter delay
                 }
             }
             Err(e) => return Err(to_py_err(e)),
@@ -72,10 +75,18 @@ fn read_exact_from_buffer(
     };
 
     while filled < buf.len() {
+        // Check for Python interrupt
+        Python::with_gil(|py| py.check_signals())?;
+        
         // First try to fill from read buffer
         while filled < buf.len() && !read_buffer.is_empty() {
             buf[filled] = read_buffer.pop_front().unwrap();
             filled += 1;
+            
+            // Periodically check for interrupts during buffer processing
+            if filled % 100 == 0 {
+                Python::with_gil(|py| py.check_signals())?;
+            }
         }
         
         if filled == buf.len() {
@@ -91,8 +102,8 @@ fn read_exact_from_buffer(
         // If we've made good progress but stalled, consider accepting
         let completion_ratio = filled as f32 / buf.len() as f32;
         if completion_ratio >= min_completion_ratio && // Met size-based threshold
-           stall_time.elapsed() > Duration::from_millis(8) && // Reduced stall time
-           last_read_time.elapsed() > Duration::from_millis(5) { // Reduced wait time
+           stall_time.elapsed() > Duration::from_millis(5) && // Further reduced stall time
+           last_read_time.elapsed() > Duration::from_millis(3) { // Further reduced wait time
             // Zero-fill remaining bytes
             for i in filled..buf.len() {
                 buf[i] = 0;
@@ -116,7 +127,7 @@ fn read_exact_from_buffer(
         } else {
             consecutive_empty_reads += 1;
             if consecutive_empty_reads >= 3 {
-                std::thread::sleep(Duration::from_micros(500));  // Longer sleep to accumulate data
+                std::thread::sleep(Duration::from_micros(250));  // Shorter sleep
             }
         }
     }
@@ -139,9 +150,9 @@ pub struct RadarReader {
 #[pymethods]
 impl RadarReader {
     #[new]
-    #[pyo3(signature = (port_name, debug=None))]
-    pub fn new(port_name: &str, debug: Option<bool>) -> PyResult<Self> {
-        let port = serialport::new(port_name, 1036800)  // Maximum supported baud rate
+    #[pyo3(signature = (port_name, baudrate=1036800, debug=None))]
+    pub fn new(port_name: &str, baudrate: u32, debug: Option<bool>) -> PyResult<Self> {
+        let port = serialport::new(port_name, baudrate)  // Use the provided baudrate
             .timeout(Duration::from_millis(1))  // Very short timeout for more responsive reads
             .flow_control(serialport::FlowControl::None)
             .open()
