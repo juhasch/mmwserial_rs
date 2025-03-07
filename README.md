@@ -1,6 +1,10 @@
 # mmwserial
 
-A Python package for MMW serial communication.
+A Python package for data transfer between a TI radar board and a PC.
+For the xWR68xx is uses a virtual serial port, for the AWR2544 it uses UDP.
+The time critical part is implemented in Rust.
+
+Meant to work with the [xwr68xxisk](https://github.com/juhasch/xwr68xxiskhttps://github.com/juhasch/xwr68xxisk) package.
 
 ## Installation
 
